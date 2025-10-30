@@ -2,6 +2,13 @@ site_name: Mein Rezept- & Restaurant-Blog
 theme:
   name: material
   language: de
+  features:
+    - navigation.sections
+    - navigation.instant
+    - content.tooltips
+    - content.tabs.link
+    - content.code.annotate
+    - search.suggest
 
 plugins:
   - search:
@@ -26,3 +33,18 @@ plugins:
           Rezepte: Recipes
           Restaurant-Guides: Restaurant Guides
           Übersicht: Overview
+  - macros: {}   # <-- Jinja in Markdown aktivieren
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  # Material/PyMdown Ergänzungen für ???-Blöcke, Tasklists usw.
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
