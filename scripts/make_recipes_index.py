@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Erzeugt automatisch die Rezepte-Indizes für DE/EN (i18n Suffix-Variante).
+Erzeugt automatisch die Rezepte-Indizes für DE/EN als Glossar A–Z.
 
-- Sucht unter docs/<recipes_dir> nach *.md
-- Erwartete Lokalisierung: <name>.<lang>.md (z.B. ananas-fried-rice.de.md)
-- Ignoriert: index.*.md
-- Liest YAML-Frontmatter (zwischen '---' ... '---')
-- Verwendet Meta-Felder (optional):
-    title, cover, portions, time.prep, time.cook, difficulty, tags, date
-- Sortiert absteigend nach 'date' (YYYY-MM-DD oder YYYY-MM oder YYYY)
-  Fallback: Dateiname/mtime.
-- Schreibt:
+- i18n-Suffix-Variante: <slug>.<lang>.md (z.B. ananas-fried-rice.de.md)
+- schreibt:
     docs/<recipes_dir>/index.de.md
     docs/<recipes_dir>/index.en.md
-- Links zeigen auf die Basestem-Datei (ohne Sprachsuffix), damit mkdocs-static-i18n korrekt auflöst.
+- Gruppiert nach Anfangsbuchstaben (A–Z, sonst '#'), ignoriert führende Artikel.
 
 Aufruf:
   python scripts/make_recipes_index.py --root docs --recipes-dir rezepte --verbose
@@ -24,60 +17,45 @@ import argparse
 import re
 from pathlib import Path
 from datetime import datetime
-import yaml
 from typing import Dict, Any, Optional, List, Tuple
+import yaml
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?", re.DOTALL)
+LANGS = ["de", "en"]
 
-LANGS = ["de", "en"]  # welche Sprachen erzeugt werden sollen
-
-# UI-Texte je Sprache
 UI = {
     "de": {
-        "title": "Rezepte",
-        "subtitle": "Wähle ein Gericht aus oder nutze die Suche.",
-        "open": ":arrow_right: Zum Rezept",
-        "chips": {
-            "servings": "Portionen",
-            "prep": "Vorbereitung",
-            "cook": "Kochen",
-            "level": "Level",
-        },
-        "no_cover": "Kein Bild",
+        "title": "Rezepte (Glossar)",
+        "subtitle": "Alphabetische Übersicht. Wähle ein Rezept oder nutze die Suche.",
+        "no_entries": "_Keine Rezepte gefunden._",
+        "articles": ["der", "die", "das", "ein", "eine", "einen", "einem", "einer", "the", "a", "an"],
+        "letters": [chr(c) for c in range(ord("A"), ord("Z")+1)] + ["#"],
     },
     "en": {
-        "title": "Recipes",
-        "subtitle": "Pick a dish or use search.",
-        "open": ":arrow_right: Open recipe",
-        "chips": {
-            "servings": "Servings",
-            "prep": "Prep",
-            "cook": "Cook",
-            "level": "Level",
-        },
-        "no_cover": "No image",
+        "title": "Recipes (Glossary)",
+        "subtitle": "Alphabetical index. Pick a recipe or use search.",
+        "no_entries": "_No recipes found._",
+        "articles": ["the", "a", "an", "der", "die", "das"],
+        "letters": [chr(c) for c in range(ord("A"), ord("Z")+1)] + ["#"],
     },
 }
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--root", default="docs", help="Root der MkDocs-Dokumente (default: docs)")
-    p.add_argument("--recipes-dir", default="rezepte", help="Unterordner mit Rezepten (default: rezepte)")
+    p.add_argument("--root", default="docs", help="MkDocs root (default: docs)")
+    p.add_argument("--recipes-dir", default="rezepte", help="Recipes subdir (default: rezepte)")
     p.add_argument("--verbose", action="store_true")
     return p.parse_args()
 
 def read_frontmatter(text: str) -> Tuple[Dict[str, Any], str]:
-    """Gibt (meta, body) zurück. meta={} falls keine Frontmatter."""
     m = FRONTMATTER_RE.match(text)
     if not m:
         return {}, text
-    fm = m.group(1)
-    meta = yaml.safe_load(fm) or {}
+    meta = yaml.safe_load(m.group(1)) or {}
     body = text[m.end():]
     return meta, body
 
 def parse_date(val: Any) -> Optional[datetime]:
-    """Parst flexible Datumsangaben (YYYY-MM-DD | YYYY-MM | YYYY)."""
     if not val:
         return None
     s = str(val)
@@ -89,7 +67,6 @@ def parse_date(val: Any) -> Optional[datetime]:
     return None
 
 def lang_of_file(path: Path) -> Optional[str]:
-    """Extrahiert Sprachsuffix aus Dateiname: foo.de.md -> de."""
     parts = path.name.split(".")
     if len(parts) < 3:
         return None
@@ -97,82 +74,109 @@ def lang_of_file(path: Path) -> Optional[str]:
     return lang if lang in LANGS else None
 
 def base_stem(path: Path) -> str:
-    """foo.de.md -> foo.md (ohne Sprachsuffix), damit i18n korrekt auflöst."""
     parts = path.name.split(".")
     if len(parts) >= 3 and parts[-2] in LANGS and parts[-1] == "md":
         return ".".join(parts[:-2]) + ".md"
     return path.name
 
+# --- Glossar-Helfer ---
+
+def normalize_first_char(s: str) -> str:
+    if not s:
+        return "#"
+    ch = s[0]
+    # deutsche Umlaute / ß / Akzente grob normalisieren
+    mapping = {
+        "Ä":"A","Ö":"O","Ü":"U","ä":"A","ö":"O","ü":"U",
+        "ẞ":"S","ß":"S",
+        "À":"A","Á":"A","Â":"A","Ã":"A","Å":"A","à":"A","á":"A","â":"A","ã":"A","å":"A",
+        "È":"E","É":"E","Ê":"E","Ë":"E","è":"E","é":"E","ê":"E","ë":"E",
+        "Ì":"I","Í":"I","Î":"I","Ï":"I","ì":"I","í":"I","î":"I","ï":"I",
+        "Ò":"O","Ó":"O","Ô":"O","Õ":"O","ò":"O","ó":"O","ô":"O","õ":"O",
+        "Ù":"U","Ú":"U","Û":"U","ù":"U","ú":"U","û":"U",
+        "Ç":"C","ç":"C",
+        "Ñ":"N","ñ":"N",
+    }
+    ch = mapping.get(ch, ch)
+    ch = ch.upper()
+    return ch if "A" <= ch <= "Z" else "#"
+
+def strip_leading_article(title: str, lang: str) -> str:
+    arts = UI[lang]["articles"]
+    t = title.strip()
+    tl = t.lower()
+    for a in arts:
+        if tl.startswith(a + " "):
+            return t[len(a)+1:].strip()
+    return t
+
+def sort_key(title: str, lang: str) -> str:
+    # Für Sortierung: führenden Artikel entfernen, grob ASCII-ähnlich machen
+    t = strip_leading_article(title, lang)
+    repl = str.maketrans({
+        "Ä":"Ae","Ö":"Oe","Ü":"Ue","ä":"ae","ö":"oe","ü":"ue","ẞ":"Ss","ß":"ss",
+        "À":"A","Á":"A","Â":"A","Ã":"A","Å":"A",
+        "È":"E","É":"E","Ê":"E","Ë":"E",
+        "Ì":"I","Í":"I","Î":"I","Ï":"I",
+        "Ò":"O","Ó":"O","Ô":"O","Õ":"O",
+        "Ù":"U","Ú":"U","Û":"U",
+        "Ç":"C","Ñ":"N",
+    })
+    return t.translate(repl).lower()
+
 def collect_recipes(recipes_dir: Path, verbose=False):
-    """Liest alle Rezepte und liefert je Sprache eine Liste von Dicts."""
     per_lang: Dict[str, List[Dict[str, Any]]] = {lang: [] for lang in LANGS}
     for md in sorted(recipes_dir.glob("*.md")):
         if md.name.startswith("index."):
             continue
-        lang = lang_of_file(md)
-        if not lang:
-            # nicht-lokalisierte Datei: optional ignorieren oder DE zuordnen
-            lang = "de"
+        lang = lang_of_file(md) or "de"
         text = md.read_text(encoding="utf-8")
         meta, _ = read_frontmatter(text)
-        title = meta.get("title") or md.stem
+        title = str(meta.get("title") or md.stem)
         cover = meta.get("cover")
-        portions = meta.get("portions")
-        time_prep = (meta.get("time") or {}).get("prep")
-        time_cook = (meta.get("time") or {}).get("cook")
-        difficulty = meta.get("difficulty")
-        date_obj = parse_date(meta.get("date"))
-        if not date_obj:
-            # Fallback: mtime
-            date_obj = datetime.fromtimestamp(md.stat().st_mtime)
+        date_obj = parse_date(meta.get("date")) or datetime.fromtimestamp(md.stat().st_mtime)
         item = {
-            "title": str(title),
+            "title": title,
             "cover": str(cover) if cover else None,
-            "portions": portions,
-            "time_prep": time_prep,
-            "time_cook": time_cook,
-            "difficulty": difficulty,
             "date": date_obj,
-            "link": base_stem(md),  # sprachneutraler Link
+            "link": base_stem(md),
             "path": md,
+            "sort_key": sort_key(title, lang),
+            "group": normalize_first_char(strip_leading_article(title, lang)),
         }
         per_lang.setdefault(lang, []).append(item)
         if verbose:
-            print(f"[{lang}] + {md.name} -> {item['title']}")
-    # sortiere je Sprache nach Datum absteigend
+            print(f"[{lang}] + {md.name} -> {title} (group {item['group']})")
+    # innerhalb der Sprache sortieren nach sort_key, dann Titel
     for lang, items in per_lang.items():
-        items.sort(key=lambda x: (x["date"], x["title"].lower()), reverse=True)
+        items.sort(key=lambda x: (x["group"], x["sort_key"], x["title"].lower()))
     return per_lang
 
-def render_index(lang: str, items: List[Dict[str, Any]]) -> str:
+def render_glossary(lang: str, items: List[Dict[str, Any]]) -> str:
     ui = UI[lang]
-    chips = ui["chips"]
-    lines = []
-    lines.append(f"# {ui['title']}\n")
-    lines.append(ui["subtitle"] + "\n")
-    lines.append('<div class="grid cards" markdown>\n')
+    if not items:
+        return f"# {ui['title']}\n\n{ui['no_entries']}\n"
+
+    # Map Letter -> Liste
+    groups: Dict[str, List[Dict[str, Any]]] = {L: [] for L in ui["letters"]}
     for it in items:
-        cover = it["cover"]
-        title = it["title"]
-        link = it["link"]
-        meta_bits = []
-        if it["portions"]:
-            meta_bits.append(f"**{chips['servings']}:** {it['portions']}")
-        if it["time_prep"]:
-            meta_bits.append(f"**{chips['prep']}:** {it['time_prep']}")
-        if it["time_cook"]:
-            meta_bits.append(f"**{chips['cook']}:** {it['time_cook']}")
-        if it["difficulty"]:
-            meta_bits.append(f"**{chips['level']}:** {it['difficulty']}")
-        meta_line = " · ".join(meta_bits) if meta_bits else ""
-        # Karte
-        lines.append(f"- {'![](' + cover + ')' if cover else ui['no_cover']}  \n"
-                     f"  **{title}**  \n"
-                     f"  {meta_line}  \n"
-                     f"  [{UI[lang]['open']}]({link})")
-        lines.append("")  # Leerzeile zwischen Karten
-    lines.append("</div>\n")
-    return "\n".join(lines)
+        groups.setdefault(it["group"], []).append(it)
+
+    out: List[str] = []
+    out.append(f"# {ui['title']}\n")
+    out.append(ui["subtitle"] + "\n")
+
+    for letter in ui["letters"]:
+        lst = groups.get(letter, [])
+        if not lst:
+            continue
+        out.append(f"## {letter}\n")
+        for it in lst:
+            # reine Glossar-Liste: nur Linktitel (keine Bilder/Chips)
+            out.append(f"- [{it['title']}]({it['link']})")
+        out.append("")  # Leerzeile nach Gruppe
+    out.append("")  # EOF newline
+    return "\n".join(out)
 
 def main():
     args = parse_args()
@@ -180,11 +184,9 @@ def main():
     recipes_dir = (root / args.recipes_dir).resolve()
     assert recipes_dir.exists(), f"{recipes_dir} existiert nicht."
     per_lang = collect_recipes(recipes_dir, verbose=args.verbose)
-
-    # Schreibe index pro Sprache
     for lang in LANGS:
         out_path = recipes_dir / f"index.{lang}.md"
-        content = render_index(lang, per_lang.get(lang, []))
+        content = render_glossary(lang, per_lang.get(lang, []))
         out_path.write_text(content, encoding="utf-8")
         if args.verbose:
             print(f"Geschrieben: {out_path}")

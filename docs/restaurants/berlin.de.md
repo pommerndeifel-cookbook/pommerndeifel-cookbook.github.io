@@ -1,17 +1,17 @@
----
-title: "Berlin – Empfehlungen"
----
-
-# Berlin – Restaurant-Empfehlungen
+# Berlin – Restaurant Recommendations
 
 <div class="grid cards" markdown>
-- :fork_and_knife: **Kiezküche X**  
-  *€€ · Modern European* — Kreuzberg  
-  [Karte öffnen](https://maps.google.com/?q=Berlin)  
-  **Must-try:** Rote-Bete-Carpaccio, hausgemachte Gnocchi.
 
-- :ramen: **Nudelhaus Y**  
-  *€ · Asiatisch* — Friedrichshain  
-  [Karte öffnen](https://maps.google.com/?q=Berlin)  
-  **Must-try:** Chili-Sesam-Nudeln, Gurkensalat.
+-   :fork_and_knife: **Kiezküche X**
+    
+    *€€ · Modern European* — Kreuzberg  
+    [Open map](https://maps.google.com/?q=Berlin)  
+    **Must-try:** Beet carpaccio, homemade gnocchi.
+
+-   :ramen: **Nudelhaus Y**
+    
+    *€ · Asian* — Friedrichshain  
+    [Open map](https://maps.google.com/?q=Berlin)  
+    **Must-try:** Chili-sesame noodles, cucumber salad.
+
 </div>
