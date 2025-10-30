@@ -1,24 +1,20 @@
 site_name: Mein Rezept- & Restaurant-Blog
 theme:
   name: material
-  language: de             # UI-Sprache für die Default-Variante
-  features:
-    - navigation.sections
-    - navigation.instant
-    - content.tabs.link
-    - content.code.annotate
-    - search.suggest
-    - search.highlight
+  language: de
 
 plugins:
   - search:
       lang: [de, en]
   - i18n:
       default_language: de
-      languages:
-        - de
-        - en
       docs_structure: suffix
+      languages:
+        - locale: de
+          name: Deutsch
+          default: true
+        - locale: en
+          name: English
       nav_translations:
         de:
           Start: Start
