@@ -1,12 +1,8 @@
-# Rezepte
+# Rezepte (Glossar)
 
-Wähle ein Gericht aus oder nutze die Suche.
+Alphabetische Übersicht. Wähle ein Rezept oder nutze die Suche.
 
-<div class="grid cards" markdown>
+## A
 
-- ![](rezepte/bilder/ananas-fried-rice.jpg)  
-  **Ananas Fried Rice**  
-  **Portionen:** 2 · **Vorbereitung:** 15 Min · **Kochen:** 12 Min · **Level:** einfach  
-  [:arrow_right: Zum Rezept](ananas-fried-rice.md)
+- [Ananas Fried Rice](ananas-fried-rice.md)
 
-</div>
