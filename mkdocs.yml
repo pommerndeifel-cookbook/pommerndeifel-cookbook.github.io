@@ -34,6 +34,10 @@ plugins:
           Restaurant-Guides: Restaurant Guides
           Übersicht: Overview
   - macros: {}   # <-- Jinja in Markdown aktivieren
+  - exclude:
+      glob:
+        - "templates/**"
+        - "_templates/**"
 
 markdown_extensions:
   - admonition
