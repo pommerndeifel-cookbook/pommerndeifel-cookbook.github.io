@@ -1,9 +1,12 @@
 # Rezepte
 
-Wähle ein Gericht aus der Navigation oder nutze die Suche.
+Wähle ein Gericht aus oder nutze die Suche.
 
 <div class="grid cards" markdown>
-- :pineapple: **Ananas Fried Rice**  
-  Süß-herzhaft, in ~30 Minuten.  
+
+- ![](rezepte/bilder/ananas-fried-rice.jpg)  
+  **Ananas Fried Rice**  
+  **Portionen:** 2 · **Vorbereitung:** 15 Min · **Kochen:** 12 Min · **Level:** einfach  
   [:arrow_right: Zum Rezept](ananas-fried-rice.md)
+
 </div>
