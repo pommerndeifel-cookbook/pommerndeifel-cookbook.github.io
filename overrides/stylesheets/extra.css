@@ -1,0 +1,26 @@
+/* Meta-Chips oberhalb der Rezepte */
+.recipe-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: .5rem 0 1rem;
+}
+.recipe-meta .chip {
+  display: inline-block;
+  padding: .25rem .6rem;
+  border-radius: 999px;
+  background: var(--md-accent-fg-color--transparent);
+  border: 1px solid var(--md-accent-fg-color);
+  font-size: .85rem;
+}
+
+/* Zutaten-Checkboxen größer & mit Zeilenhöhe */
+.md-typeset ul li input[type="checkbox"] {
+  width: 1.1rem; height: 1.1rem; transform: translateY(1px);
+  margin-right: .5rem;
+}
+
+/* Kartenraster (Material nutzt .grid.cards) — etwas Abstand */
+.grid.cards > ul > li {
+  min-height: 0;
+}

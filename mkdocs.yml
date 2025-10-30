@@ -1,0 +1,59 @@
+site_name: Mein Rezept- & Restaurant-Blog
+site_url: https://example.com
+theme:
+  name: material
+  language: de
+  features:
+    - navigation.sections
+    - navigation.instant
+    - content.tooltips
+    - content.tabs.link
+    - content.code.annotate
+    - search.suggest
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search:
+      lang: [de, en]
+  - i18n:
+      default_language: de
+      languages:
+        de: Deutsch
+        en: English
+      docs_structure: suffix
+      nav_translations:
+        de:
+          Start: Start
+          Rezepte: Rezepte
+          Restaurant-Guides: Restaurant-Guides
+          Übersicht: Übersicht
+          Berlin: Berlin
+          Krakau: Krakau
+        en:
+          Start: Home
+          Rezepte: Recipes
+          Restaurant-Guides: Restaurant Guides
+          Übersicht: Overview
+          Berlin: Berlin
+          Krakau: Krakow
+
+nav:
+  - Start: index.md
+  - Rezepte:
+      - Übersicht: rezepte/index.md
+      - Ananas Fried Rice: rezepte/ananas-fried-rice.md
+  - Restaurant-Guides:
+      - Übersicht: restaurants/index.md
+      - Berlin: restaurants/berlin.md
+      - Krakau: restaurants/krakau.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - def_list
+  - tables
+  - footnotes

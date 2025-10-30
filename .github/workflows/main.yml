@@ -1,0 +1,112 @@
+name: Build and deploy pages
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "requirements.txt"
+      - "scripts/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # verhindere Infinite-Loop, falls wir am Ende committen
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            # Fallback: Minimum für MkDocs + Material + i18n + PyYAML
+            pip install mkdocs mkdocs-material mkdocs-static-i18n PyYAML
+          fi
+
+      # --- Rezepte-Indizes erzeugen (DE/EN) -------------------------------
+      - name: Generate recipes index (DE/EN)
+        run: |
+          python scripts/make_recipes_index.py --root docs --recipes-dir rezepte --verbose
+        # Skript erzeugt: docs/rezepte/index.de.md & index.en.md
+
+      - name: Show changes (diagnostics)
+        run: |
+          echo "Changed files:"
+          git status --porcelain || true
+          echo "Preview docs/rezepte/index.de.md:"
+          sed -n '1,120p' docs/rezepte/index.de.md || true
+          echo "Preview docs/rezepte/index.en.md:"
+          sed -n '1,120p' docs/rezepte/index.en.md || true
+
+      # --- Build MkDocs (mit i18n Plugin) --------------------------------
+      - name: Build MkDocs site
+        run: |
+          mkdocs build --no-strict
+        # Ergebnis liegt danach unter ./site
+
+      # --- GitHub Pages ---------------------------------------------------
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+      # ✅ Optional: generierte Indexdateien committen (verhindert Drift)
+      - name: Commit generated indices (optional)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add docs/rezepte/index.de.md docs/rezepte/index.en.md
+
+          if git diff --staged --quiet; then
+            echo "Keine Änderungen an den Rezepte-Indizes."
+          else
+            git commit -m "chore(recipes): update generated indices [skip ci]"
+            git push
+          fi
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

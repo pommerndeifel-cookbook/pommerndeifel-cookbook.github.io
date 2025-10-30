@@ -1,0 +1,13 @@
+# --- MkDocs & Theme ---
+mkdocs>=1.6
+mkdocs-material>=9.5
+
+# --- Mehrsprachigkeit ---
+mkdocs-static-i18n>=1.2
+
+# --- YAML-Frontmatter Parsing im Skript ---
+PyYAML>=6.0
+
+# --- (Optional aber nützlich) ---
+# für Markdown-Parsing oder Erweiterungen (wenn du später Rezepttexte auslesen willst)
+markdown>=3.6
